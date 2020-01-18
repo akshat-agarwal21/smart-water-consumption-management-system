@@ -1,6 +1,11 @@
+# -*- coding: utf-8 -*-
+"""
+Spyder Editor
+
+This is a temporary script file.
+"""
 import pandas as pd
 import numpy as np
-import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn import linear_model
@@ -9,14 +14,18 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.tree import DecisionTreeRegressor
+import RPi.GPIO as GPIO 
+import time, datetime, sys
 
+data = pd.read_csv("district wise rainfall normal.csv")
+print(data.head())
 def plot_graphs(groundtruth,prediction,title):        
     N = 9
-    ind = np.arange(N)  
-    width = 0.40       
+    ind = np.arange(N)  # the x locations for the groups
+    width = 0.27       # the width of the bars
 
     fig = plt.figure()
-    fig.suptitle(title, fontsize=10)
+    fig.suptitle(title, fontsize=12)
     ax = fig.add_subplot(111)
     rects1 = ax.bar(ind, groundtruth, width, color='r')
     rects2 = ax.bar(ind+width, prediction, width, color='g')
@@ -26,6 +35,7 @@ def plot_graphs(groundtruth,prediction,title):
     ax.set_xticklabels( ('APR', 'MAY', 'JUN', 'JUL','AUG', 'SEP', 'OCT', 'NOV', 'DEC') )
     ax.legend( (rects1[0], rects2[0]), ('Ground truth', 'Prediction') )
 
+#     autolabel(rects1)
     for rect in rects1:
         h = rect.get_height()
         ax.text(rect.get_x()+rect.get_width()/2., 1.05*h, '%d'%int(h),
@@ -34,49 +44,49 @@ def plot_graphs(groundtruth,prediction,title):
         h = rect.get_height()
         ax.text(rect.get_x()+rect.get_width()/2., 1.05*h, '%d'%int(h),
                 ha='center', va='bottom')
-
+#     autolabel(rects2)
 
     plt.show()
 
-district = pd.read_csv("district wise rainfall normal.csv",sep=",")
-district = district.fillna(district.mean())
-district.head()
-ap_data = district[district['STATE_UT_NAME'] == 'TAMIL NADU']
-ap_data[['DISTRICT', 'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL',
+data[['DISTRICT', 'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL',
+       'AUG', 'SEP', 'OCT', 'NOV', 'DEC']].groupby("DISTRICT").mean()[:40].plot.barh(stacked=True,figsize=(13,8));
+data[['DISTRICT', 'Jan-Feb', 'Mar-May',
+       'Jun-Sep', 'Oct-Dec']].groupby("DISTRICT").sum()[:40].plot.barh(stacked=True,figsize=(16,8));
+tn_data = data[data['STATE_UT_NAME'] == 'TAMIL NADU']
+tn_data[['DISTRICT', 'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL',
        'AUG', 'SEP', 'OCT', 'NOV', 'DEC']].groupby("DISTRICT").mean()[:40].plot.barh(stacked=True,figsize=(18,8));
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_absolute_error
-
-division_data = np.asarray(district[['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL',
+tn_data[['DISTRICT', 'Jan-Feb', 'Mar-May',
+       'Jun-Sep', 'Oct-Dec']].groupby("DISTRICT").sum()[:40].plot.barh(stacked=True,figsize=(16,8));
+Acclist = []
+division_data = np.asarray(data[['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL',
        'AUG', 'SEP', 'OCT', 'NOV', 'DEC']])
 
-X = None; y = None
+x = None; y = None
 for i in range(division_data.shape[1]-3):
-    if X is None:
-        X = division_data[:, i:i+3]
+    if x is None:
+        x = division_data[:, i:i+3]
         y = division_data[:, i+3]
     else:
-        X = np.concatenate((X, division_data[:, i:i+3]), axis=0)
+        x = np.concatenate((x, division_data[:, i:i+3]), axis=0)
         y = np.concatenate((y, division_data[:, i+3]), axis=0)
         
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-temp = district[['DISTRICT','JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL','AUG', 'SEP', 'OCT', 'NOV', 'DEC']].loc[district['STATE_UT_NAME'] == 'TAMIL NADU']
-hyd = np.asarray(temp[['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL','AUG', 'SEP', 'OCT', 'NOV', 'DEC']].loc[temp['DISTRICT'] == 'CHENNAI'])
-print(hyd); 
-X_year = None; y_year = None
-for i in range(hyd.shape[1]-3):
-    if X_year is None:
-        X_year = hyd[:, i:i+3]
-        y_year = hyd[:, i+3]
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
+temp = data[['DISTRICT','JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL','AUG', 'SEP', 'OCT', 'NOV', 'DEC']].loc[data['STATE_UT_NAME'] == 'TAMIL NADU']
+maa = np.asarray(temp[['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL','AUG', 'SEP', 'OCT', 'NOV', 'DEC']].loc[temp['DISTRICT'] == 'CHENNAI'])
+# print temp
+x_year = None; y_year = None
+for i in range(maa.shape[1]-3):
+    if x_year is None:
+        x_year = maa[:, i:i+3]
+        y_year = maa[:, i+3]
     else:
-        X_year = np.concatenate((X_year, hyd[:, i:i+3]), axis=0)
-        y_year = np.concatenate((y_year, hyd[:, i+3]), axis=0)
-Acclist=[];
+        x_year = np.concatenate((x_year, maa[:, i:i+3]), axis=0)
+        y_year = np.concatenate((y_year, maa[:, i+3]), axis=0)
 scoretest=[]
 for i in range(1,25):
     knn = KNeighborsRegressor(n_neighbors = i)
-    knn.fit(X_train, y_train)
-    scoretest.append(knn.score(X_test, y_test))
+    knn.fit(x_train, y_train)
+    scoretest.append(knn.score(x_test, y_test))
 
 plt.plot(range(1, 25), scoretest)
 plt.xticks(np.arange(1, 25, 1))
@@ -89,16 +99,72 @@ p = max(scoretest)*100
 p1 = round(p,2)
 Acclist.append(p1)
 rf = RandomForestRegressor(n_estimators = 20, random_state = 2)
-rf.fit(X_train, y_train)
-print('Training accuracy: {:.3f}'.format(rf.score(X_train, y_train)*100))
-print('Test accuracy: {:.3f}'.format(rf.score(X_test, y_test)*100))
+rf.fit(x_train, y_train)
+print('Training accuracy: {:.3f}'.format(rf.score(x_train, y_train)*100))
+print('Test accuracy: {:.3f}'.format(rf.score(x_test, y_test)*100))
 p = max(scoretest)*100
 p1 = round(p,2)
 Acclist.append(p1)
-y_pred = rf.predict(X_test)
-y_year_pred = rf.predict(X_year)
+
+
+y_pred = rf.predict(x_test)
+y_year_pred = rf.predict(x_year)
 
 plot_graphs(y_year,y_year_pred,"Prediction in Chennai")
-rg = rf.predict([[12,43,64]])
-print(rg);
-print (rg/709);
+
+
+
+rg = (rf.predict([[12,43,64]]))/709
+lphpd = (rg/0.5)*200
+print("maximum water that can be used by a single user per day= ")
+print(lphpd)
+pphph = lphpd*7.5*60
+print(pphph)
+
+
+
+
+
+fg = 4
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(fg, GPIO.IN, pull_up_down = GPIO.PUD_UP)
+global count 
+count =0
+def countPulse(channel):
+    global count 
+    count+=1
+    print(count)
+    if count>=pphph:
+         GPIO.setmode(GPIO.BCM)
+         pinList = [14, 15, 18, 23]
+         for i in pinList:
+           GPIO.setup(i, GPIO.OUT)
+           GPIO.output(i, GPIO.HIGH)
+#time for which the valve remains open
+         SleepTimeL = 5
+# 10 is equivalent to 10 seconds 
+         try:
+           GPIO.output(14, GPIO.LOW) 
+           time.sleep(SleepTimeL);
+           GPIO.cleanup()
+           print "Good bye!"
+
+         except KeyboardInterrupt:
+           print "  Quit"
+         GPIO.cleanup()
+   
+GPIO.add_event_detect(fg, GPIO.FALLING, callback=countPulse)
+
+while True:
+    try:
+        time.sleep(1)
+    except KeyboardInterrupt:
+        print("caught")
+        GPIO.cleanup()
+        sys.exit()
+        
+
+
+
+
+     
