@@ -13,6 +13,8 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.tree import DecisionTreeRegressor
 import RPi.GPIO as GPIO 
 import time, datetime, sys
+from datetime import datetime
+import seaborn as sns
 
 
 pn = pd.read_csv("pop.csv")
@@ -61,6 +63,14 @@ tn_data[['DISTRICT', 'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL',
        'AUG', 'SEP', 'OCT', 'NOV', 'DEC']].groupby("DISTRICT").mean()[:40].plot.barh(stacked=True,figsize=(18,8));
 tn_data[['DISTRICT', 'Jan-Feb', 'Mar-May',
        'Jun-Sep', 'Oct-Dec']].groupby("DISTRICT").sum()[:40].plot.barh(stacked=True,figsize=(16,8));
+plt.figure(figsize=(11,4))
+sns.heatmap(tn_data[['Jan-Feb','Mar-May','Jun-Sep','Oct-Dec','ANNUAL']].corr(),annot=True)
+plt.show()
+
+plt.figure(figsize=(11,4))
+sns.heatmap(tn_data[['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC','ANNUAL']].corr(),annot=True)
+plt.show()
+
 Acclist = []
 division_data = np.asarray(data[['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL',
        'AUG', 'SEP', 'OCT', 'NOV', 'DEC']])
@@ -118,7 +128,7 @@ plot_graphs(y_year,y_year_pred,"Prediction in Chennai")
 
 
 
-rg = (rf.predict([[12,43,64]]))/709
+rg = (rf.predict([[12,43,64]]))*10000/tn['Population'].values
 lphpd = (rg/0.5)*200
 print("maximum water that can be used by a single user per day= ")
 print(lphpd)
@@ -145,7 +155,18 @@ def countPulse(channel):
            GPIO.setup(i, GPIO.OUT)
            GPIO.output(i, GPIO.HIGH)
 #time for which the valve remains open
-         SleepTimeL = 5
+         todays_date = datetime.now()
+
+# to get hour from datetime
+         l=todays_date.hour
+
+# to get minute from datetime
+         m=todays_date.minute
+         n=todays_date.second
+         total = 3600*l + 60*m +n
+         
+         print(total)
+         SleepTimeL = 86400-total
 # 10 is equivalent to 10 seconds 
          try:
            GPIO.output(14, GPIO.LOW) 
