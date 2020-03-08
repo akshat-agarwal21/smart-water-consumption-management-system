@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
-"""
-Spyder Editor
 
-This is a temporary script file.
-"""
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -16,6 +13,13 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.tree import DecisionTreeRegressor
 import RPi.GPIO as GPIO 
 import time, datetime, sys
+
+
+pn = pd.read_csv("pop.csv")
+cpn = pn[pn['State']=='TAMIL NADU']
+tn = cpn[cpn['District']=='Chennai']
+x=tn['Population'].values/10000
+
 
 data = pd.read_csv("district wise rainfall normal.csv")
 print(data.head())
@@ -147,10 +151,10 @@ def countPulse(channel):
            GPIO.output(14, GPIO.LOW) 
            time.sleep(SleepTimeL);
            GPIO.cleanup()
-           print "Good bye!"
+           print ("Good bye!")
 
          except KeyboardInterrupt:
-           print "  Quit"
+           print ("  Quit")
          GPIO.cleanup()
    
 GPIO.add_event_detect(fg, GPIO.FALLING, callback=countPulse)
@@ -162,9 +166,5 @@ while True:
         print("caught")
         GPIO.cleanup()
         sys.exit()
-        
 
 
-
-
-     
